@@ -1,0 +1,11 @@
+# refactored_fyers_swing/requirements.txt
+
+pandas
+numpy
+scikit-learn
+joblib
+requests
+fyers-apiv3
+python-dotenv
+numba
+pyarrow

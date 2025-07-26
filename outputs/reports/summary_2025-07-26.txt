@@ -1,0 +1,5 @@
+SWING TRADING SCREENER REPORT - 2025-07-26
+==================================================
+
+Total Stocks Screened: 1243
+Bullish Signals Generated: 0
