@@ -71,9 +71,6 @@ class SwingTradingBacktester:
             logger.error(f" Error preparing features: {e}")
             return None
 
-
-
-
     def generate_signals(self, df):
         """Generate trading signals using the trained model"""
         try:
@@ -94,15 +91,6 @@ class SwingTradingBacktester:
 
             return df
 
-        except Exception as e:
-            logger.error(f" Error generating signals: {e}")
-            return None
-
-
-
-    
-    
-            
         except Exception as e:
             logger.error(f" Error generating signals: {e}")
             return df
@@ -543,7 +531,7 @@ def run_backtest(df, model_path=None, **kwargs):
         )
         
         # Load model
-        model_path = model_path or MODEL_FILE
+        model_path = MODEL_FILE
         if not backtester.load_model(model_path):
             return None
         

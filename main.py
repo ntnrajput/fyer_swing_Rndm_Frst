@@ -53,8 +53,6 @@ def main():
         df = pd.read_parquet(HISTORICAL_DATA_FILE)
         df['date'] = pd.to_datetime(df['date'])
         df = df[df['date'] < pd.to_datetime("2025-01-31")]
-        print(df)
-        sleep(20)
         df = add_technical_indicators(df)
         
         if 'target_hit' not in df.columns:
@@ -95,11 +93,6 @@ def main():
         # Filter original df to keep only those symbols
         df = df[df['symbol'].isin(filtered_symbols)]
 
-        print(df)
-
-        sleep(20)
-        
-        
         df = add_technical_indicators(df)
         
         # Prepare backtest parameters
@@ -138,7 +131,14 @@ def main():
             logger.error(" Backtest failed!")
 
     elif args.screener:
-        run_screener()
+        logger.info(" Starting model training...")
+        df = pd.read_parquet(HISTORICAL_DATA_FILE)
+        df['date'] = pd.to_datetime(df['date'])
+        df = add_technical_indicators(df)
+        df_latest = df.copy()
+        latest_date = df_latest["date"].max()
+        df_latest = df_latest[df_latest["date"] == latest_date].copy()
+        run_screener(df_latest)
 
     else:
         logger.info("No argument provided. Available options:")

@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from config import DAILY_DATA_FILE, MODEL_FILE, FEATURE_COLUMNS, LATEST_DATA_FILE
+from config import DAILY_DATA_FILE, MODEL_FILE, FEATURE_COLUMNS, LATEST_DATA_FILE, HISTORICAL_DATA_FILE, CONFIDENCE_THRESHOLD
 from data.fetch_stock_list import load_symbols
 from features.engineer_features import add_technical_indicators
 from model.prediction import load_model, predict
@@ -12,6 +12,7 @@ from strategy.signal_generator import generate_signals
 from utils.logger import get_logger
 import joblib
 import warnings
+from time import sleep
 warnings.filterwarnings('ignore')
 
 logger = get_logger(__name__)
@@ -37,7 +38,7 @@ def load_advanced_model():
                     logger.info(f"Model AUC: {auc:.3f}")
                 else:
                     logger.info(f"Model AUC: {auc}")
-        
+
         return model_pipeline
         
     except Exception as e:
@@ -105,17 +106,20 @@ def apply_advanced_filters(predictions, df_features):
         # Merge predictions with features
         filtered_df = predictions.merge(
             df_features[['symbol', 'date', 'close', 'volume', 'rsi', 'atr', 'bb_position',
-                        'volume_ratio', 'trend_strength', 'ema20_distance', 'ema50_distance']],
+                        'vol_by_avg_vol', 'ema20_ema50', 'ema20_price', 'ema50_price']],
             on=['symbol', 'date'],
             how='left'
         )
+
+        with pd.option_context('display.max_columns', None):
+            print(filtered_df)
         
         initial_count = len(filtered_df)
         
         # Filter 1: Only bullish predictions with high confidence
         filtered_df = filtered_df[
             (filtered_df['prediction'] == 1) & 
-            (filtered_df['probability'] >= 0.6)
+            (filtered_df['probability'] >=  CONFIDENCE_THRESHOLD)
         ]
         logger.info(f" After bullish + confidence filter: {len(filtered_df)} stocks")
         
@@ -124,13 +128,13 @@ def apply_advanced_filters(predictions, df_features):
             # RSI not overbought
             (filtered_df['rsi'] < 75) &
             # Above EMA20 or close to it (uptrend)
-            (filtered_df['ema20_distance'] >= -0.02) &
+            (filtered_df['ema20_price'] <= 0.8) &
             # Good volume (above average)
-            (filtered_df['volume_ratio'] >= 1.2) &
+            (filtered_df['vol_by_avg_vol'] >= 0.8) &
             # Not in extreme overbought territory (BB position)
             (filtered_df['bb_position'] < 0.9) &
             # Reasonable volatility (ATR)
-            (filtered_df['atr'] / filtered_df['close'] < 0.05)
+            (filtered_df['atr'] / filtered_df['close_x'] < 0.05)
         )
         
         filtered_df = filtered_df[technical_filters]
@@ -139,11 +143,11 @@ def apply_advanced_filters(predictions, df_features):
         # Filter 3: Risk management filters
         risk_filters = (
             # Minimum price (avoid penny stocks)
-            (filtered_df['close'] >= 10) &
+            (filtered_df['close_x'] >= 10) &
             # Maximum price (liquidity concerns)
-            (filtered_df['close'] <= 5000) &
+            (filtered_df['close_x'] <= 5000) &
             # Trend alignment
-            (filtered_df['trend_strength'] >= 0)
+            (filtered_df['ema20_ema50'] >= 0.8)
         )
         
         filtered_df = filtered_df[risk_filters]
@@ -156,7 +160,7 @@ def apply_advanced_filters(predictions, df_features):
         filtered_df['screening_score'] = (
             filtered_df['probability'] * 0.4 +
             (filtered_df['confidence'] * 0.3) +
-            (np.clip(filtered_df['volume_ratio'], 0, 3) / 3 * 0.2) +
+            (np.clip(filtered_df['vol_by_avg_vol'], 0, 3) / 3 * 0.2) +
             (np.clip((80 - filtered_df['rsi']) / 50, 0, 1) * 0.1)
         )
         
@@ -229,6 +233,7 @@ def save_screening_results(signals, insights, today_str):
         # Save detailed insights
         insights_file = f"{output_dir}/insights_{today_str}.csv"
         insights.to_csv(insights_file, index=False)
+        
         logger.info(f" Insights saved to {insights_file}")
         
         # Save summary report
@@ -252,7 +257,7 @@ def save_screening_results(signals, insights, today_str):
     except Exception as e:
         logger.error(f" Failed to save results: {e}")
 
-def run_screener():
+def run_screener(df):
     """
     Advanced screener function that loads today's data, predicts targets,
     applies sophisticated filters, and saves actionable swing trading signals.
@@ -260,12 +265,12 @@ def run_screener():
     try:
         logger.info("===  Starting Advanced Daily Screener ===")
         
+        
         # Load today's data
         if not os.path.exists(LATEST_DATA_FILE):
             logger.error(f" Data file not found: {LATEST_DATA_FILE}")
             return
-            
-        df_today = pd.read_parquet(LATEST_DATA_FILE)
+        df_today = df.copy()
         logger.info(f" Loaded today's data: {df_today.shape}")
         
         # Ensure we have recent data
@@ -280,9 +285,9 @@ def run_screener():
         df_features = df_today.copy()
         
         # If features are not engineered, do it now
-        required_features = ['rsi', 'atr', 'bb_position', 'ema20_distance']
+        required_features = FEATURE_COLUMNS
         missing_features = [f for f in required_features if f not in df_features.columns]
-        
+
         if missing_features:
             logger.info(f" Adding missing features: {missing_features}")
             df_features = add_technical_indicators(df_features)
@@ -298,10 +303,7 @@ def run_screener():
             logger.info(f"{key}: Type={type(model_pipeline[key])}, Value={model_pipeline[key] if key in ['metrics', 'best_params'] else '...'}")
 
         # Make predictions
-        predictions = advanced_predict(model_pipeline, df_features)
-        if predictions is None:
-            logger.error(" Cannot proceed without predictions")
-            return
+        predictions = advanced_predict(model_pipeline, df_features)       
         
         # Apply advanced filters
         filtered_signals = apply_advanced_filters(predictions, df_features)
