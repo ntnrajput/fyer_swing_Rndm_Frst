@@ -303,7 +303,11 @@ def run_screener(df):
             logger.info(f"{key}: Type={type(model_pipeline[key])}, Value={model_pipeline[key] if key in ['metrics', 'best_params'] else '...'}")
 
         # Make predictions
-        predictions = advanced_predict(model_pipeline, df_features)       
+        predictions = advanced_predict(model_pipeline, df_features)   
+        filtered_symbols = predictions[(predictions['prediction'] == 1) & (predictions['confidence'] > 0.7)]['symbol'].tolist()
+        
+        pd.DataFrame(filtered_symbols, columns=['symbol']).to_csv('predicted_stocks.csv', index=False)
+
         
         # Apply advanced filters
         filtered_signals = apply_advanced_filters(predictions, df_features)
