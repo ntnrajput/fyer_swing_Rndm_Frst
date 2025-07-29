@@ -61,8 +61,6 @@ def advanced_predict(model_pipeline, df_features):
         logger.info(" Making predictions with advanced model...")
         
         # Prepare features (excluding target and metadata columns)
-        exclude_cols = ['target_hit', 'date', 'symbol', 'max_return', 'min_return', 
-                       'Swing_High', 'Swing_Low']
         feature_cols = FEATURE_COLUMNS
         
         # Ensure we have the required features
@@ -304,10 +302,13 @@ def run_screener(df):
 
         # Make predictions
         predictions = advanced_predict(model_pipeline, df_features)   
-        filtered_symbols = predictions[(predictions['prediction'] == 1) & (predictions['confidence'] > 0.7)]['symbol'].tolist()
-        
-        pd.DataFrame(filtered_symbols, columns=['symbol']).to_csv('predicted_stocks.csv', index=False)
 
+
+        filtered_symbols = predictions[(predictions['prediction'] == 1) & (predictions['confidence'] > CONFIDENCE_THRESHOLD)]['symbol'].tolist()
+        filtered_df = predictions[(predictions['prediction'] == 1) & 
+                          (predictions['confidence'] > CONFIDENCE_THRESHOLD)]
+
+        filtered_df.to_csv('predicted_stocks.csv', index=False)
         
         # Apply advanced filters
         filtered_signals = apply_advanced_filters(predictions, df_features)
