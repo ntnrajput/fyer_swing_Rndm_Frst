@@ -88,7 +88,7 @@ def fetch_and_store_all(symbols, years=3):
         if not symbol_data.empty:
             latest_date = symbol_data["date"].max()
             fetch_from = latest_date
-            if fetch_from >= today:
+            if fetch_from > today:
                 logger.info(f"{symbol} is up-to-date. Skipping fetch.")
                 return symbol_data
             logger.info(f"Latest data for {symbol} is till {latest_date}. Refetching from {latest_date}")
@@ -128,6 +128,7 @@ def fetch_and_store_all(symbols, years=3):
         full_data = pd.concat(updated_data, ignore_index=True)
         full_data.drop_duplicates(subset=["symbol", "date"], inplace=True)
         full_data.sort_values(by=["symbol", "date"], inplace=True)
+
         full_data.to_parquet(HISTORICAL_DATA_FILE, index=False)
         full_data.to_csv(HISTORICAL_DATA_FILE_csv,index=False)
         logger.info(f"Historical data saved to {HISTORICAL_DATA_FILE}")
