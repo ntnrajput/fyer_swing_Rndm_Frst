@@ -113,7 +113,7 @@ def add_macd(df: pd.DataFrame) -> pd.DataFrame:
         macd_signal_type = macd_signal_type.map({True: 'buy'}).fillna(
             macd_cross_signal.map({True: 'sell'}).fillna(''))
 
-        macd_ls_signal = ((macd > 0) & (macd_signal > 0) & (macd_crossover)).astype(int)
+        macd_ls_signal =  (macd_crossover).astype(int)
         group['macd_ls_signal'] = macd_ls_signal
         
         return group
