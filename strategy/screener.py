@@ -281,6 +281,8 @@ def run_screener(df):
         # Feature engineering (assuming this is already done if using LATEST_DATA_FILE)
         logger.info(" Using pre-engineered features...")
         df_features = df_today.copy()
+        df_features = df_features[df_features['strong_rejection'] != 1]
+        df_features.to_csv('today_feature.csv')
         
         # If features are not engineered, do it now
         required_features = FEATURE_COLUMNS

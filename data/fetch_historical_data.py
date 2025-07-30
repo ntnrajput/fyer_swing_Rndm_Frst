@@ -130,7 +130,7 @@ def fetch_and_store_all(symbols, years=3):
         full_data.sort_values(by=["symbol", "date"], inplace=True)
 
         full_data.to_parquet(HISTORICAL_DATA_FILE, index=False)
-        full_data.to_csv(HISTORICAL_DATA_FILE_csv,index=False)
+        # full_data.to_csv(HISTORICAL_DATA_FILE_csv,index=False)
         logger.info(f"Historical data saved to {HISTORICAL_DATA_FILE}")
     else:
         logger.warning("No data was fetched or updated.")
