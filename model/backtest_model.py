@@ -37,7 +37,7 @@ class SwingTradingBacktester:
     def load_model(self, model_path):
         """Load trained model pipeline"""
         try:
-            self.model_pipeline = joblib.load(model_path)
+            self.model_pipeline = joblib.load(MODEL_FILE)
             logger.info(f"Model loaded from {model_path}")
             return True
         except Exception as e:
@@ -48,6 +48,8 @@ class SwingTradingBacktester:
         """Prepare features using the model pipeline"""
         try:
             full_feature_list = self.model_pipeline['all_features']
+            
+            
             missing = [f for f in full_feature_list if f not in df.columns]
             if missing:
                 logger.warning(f"Missing features: {missing}")
@@ -88,6 +90,8 @@ class SwingTradingBacktester:
             df = df.copy()
             df['strong_signal'] = predictions
             df['signal_confidence'] = probabilities
+
+            df.to_csv('backtest_pred.csv')
 
             return df
 
@@ -225,7 +229,6 @@ class SwingTradingBacktester:
             take_profit_pct: Take profit percentage
         """
         logger.info(" Starting backtest simulation...")
-
         df = self.prepare_features(df)
         if df is None:
             logger.error("Features not prepared properly")
@@ -512,7 +515,6 @@ class SwingTradingBacktester:
         except Exception as e:
             logger.error(f" Error creating plots: {e}")
 
-
 def run_backtest(df, model_path=None, **kwargs):
     """
     Main function to run backtest
@@ -542,7 +544,6 @@ def run_backtest(df, model_path=None, **kwargs):
             stop_loss_pct=kwargs.get('stop_loss_pct', 0.03),
             take_profit_pct=kwargs.get('take_profit_pct', 0.08)
         )
-        
 
         # Generate report
         results = backtester.generate_report(results)
@@ -556,7 +557,6 @@ def run_backtest(df, model_path=None, **kwargs):
     except Exception as e:
         logger.error(f" Backtest failed: {e}")
         return None
-
 
 if __name__ == "__main__":
     # Example usage

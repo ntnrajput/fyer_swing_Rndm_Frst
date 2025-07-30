@@ -69,8 +69,6 @@ def main():
 
     elif args.backtest:
         logger.info(" Starting backtest...")
-        
-        # Load historical data with features
         df = pd.read_parquet(HISTORICAL_DATA_FILE)
         df['date'] = pd.to_datetime(df['date'])
         df = df[df['date'] > pd.to_datetime("2025-01-30")]
@@ -134,10 +132,32 @@ def main():
         logger.info(" Starting model training...")
         df = pd.read_parquet(HISTORICAL_DATA_FILE)
         df['date'] = pd.to_datetime(df['date'])
+        df = df[df['date'] > pd.to_datetime("2025-01-30")]
+       
+        filtered_symbols = []
+
+        for symbol, group in df.groupby('symbol'):
+            group = group.sort_values('date')  # sort by date to ensure correct order
+            
+            # Skip if less than 50 records available
+            if len(group) < 50:
+                continue
+
+            avg_volume = group['volume'].tail(50).mean()
+            latest_close = group.iloc[-1]['close']
+
+            if avg_volume > AVG_VOL and latest_close > AVG_PRICE:
+                filtered_symbols.append(symbol)
+
+        # Filter original df to keep only those symbols
+        df = df[df['symbol'].isin(filtered_symbols)]
+
+
         df = add_technical_indicators(df)
         df_latest = df.copy()
         latest_date = df_latest["date"].max()
         df_latest = df_latest[df_latest["date"] == latest_date].copy()
+        df_latest.to_csv('latest_df_screener.csv')
         run_screener(df_latest)
 
     else:

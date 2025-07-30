@@ -61,7 +61,7 @@ def advanced_predict(model_pipeline, df_features):
         logger.info(" Making predictions with advanced model...")
         
         # Prepare features (excluding target and metadata columns)
-        feature_cols = FEATURE_COLUMNS
+        feature_cols = model_pipeline.get('all_features', [])
         
         # Ensure we have the required features
         available_features = [col for col in feature_cols if col in df_features.columns]
@@ -84,12 +84,13 @@ def advanced_predict(model_pipeline, df_features):
             'close': df_features['close'],
             'prediction': predictions,
             'probability': prediction_probabilities[:, 1],  # Probability of positive class
-            'confidence': np.max(prediction_probabilities, axis=1)
+            'confidence': np.max(prediction_probabilities, axis=1),
+            'strong_rejection':df_features['strong_rejection']
         })
         
         logger.info(f" Predictions completed for {len(results)} stocks")
         logger.info(f"Bullish signals: {sum(predictions)} out of {len(predictions)}")
-        
+        results.to_csv('today_pred_result.csv')
         return results
         
     except Exception as e:
@@ -277,15 +278,20 @@ def run_screener(df):
             days_old = (datetime.now() - latest_date).days
             if days_old > 5:
                 logger.warning(f" Data is {days_old} days old. Consider updating.")
+                sleep(200)
         
         # Feature engineering (assuming this is already done if using LATEST_DATA_FILE)
         logger.info(" Using pre-engineered features...")
         df_features = df_today.copy()
-        df_features = df_features[df_features['strong_rejection'] != 1]
         df_features.to_csv('today_feature.csv')
         
-        # If features are not engineered, do it now
-        required_features = FEATURE_COLUMNS
+        model_pipeline = joblib.load(MODEL_FILE)
+        if model_pipeline is None:
+            logger.error(" Cannot proceed without model")
+            return
+
+        required_features = model_pipeline.get('all_features', [])
+        
         missing_features = [f for f in required_features if f not in df_features.columns]
 
         if missing_features:
@@ -308,7 +314,7 @@ def run_screener(df):
 
         filtered_symbols = predictions[(predictions['prediction'] == 1) & (predictions['confidence'] > CONFIDENCE_THRESHOLD)]['symbol'].tolist()
         filtered_df = predictions[(predictions['prediction'] == 1) & 
-                          (predictions['confidence'] > CONFIDENCE_THRESHOLD)]
+                          (predictions['confidence'] > CONFIDENCE_THRESHOLD) & (predictions['strong_rejection']!= 1)]
 
         filtered_df.to_csv('predicted_stocks.csv', index=False)
         
