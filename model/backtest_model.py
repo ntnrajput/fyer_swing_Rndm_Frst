@@ -254,7 +254,7 @@ class SwingTradingBacktester:
             daily_portfolio[date][symbol] = current_price
             
             # Process buy signals
-            if row['strong_signal'] == 1 and row['signal_confidence'] > CONFIDENCE_THRESHOLD and symbol not in self.current_positions:
+            if row['strong_signal'] == 1 and row['signal_confidence'] > CONFIDENCE_THRESHOLD and row['strong_rejection']!= 1 and symbol not in self.current_positions:
                 confidence = row['signal_confidence']
                 volatility = row.get('volatility_20', None)
                 

@@ -267,7 +267,7 @@ def train_model(df_all, available_features=None, model_params=None):
             mask = ~y.isnull()
             X = X[mask]
             y = y[mask]
-            print(f"📊 After numeric conversion: {len(X)} samples")
+            print(f"After numeric conversion: {len(X)} samples")
         
         # Scale features
         scaler = StandardScaler()
@@ -390,13 +390,13 @@ def train_model(df_all, available_features=None, model_params=None):
             }
         # Save single model bundle
         joblib.dump(model_bundle, MODEL_FILE)
-        logger.info(f"✅ Model pipeline saved to {MODEL_FILE}")
+        logger.info(f" Model pipeline saved to {MODEL_FILE}")
         
 
 
 
 
-        print("✅ Enhanced model with volume analysis saved!")
+        print("Enhanced model with volume analysis saved!")
         
         # Trading recommendations
         logger.info("\nTRADING RECOMMENDATIONS:")

@@ -65,6 +65,7 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
         all_dfs.append(symbol_df)
         logger.info(f" Features added for {symbol}")
+        # pd.concat(all_dfs).to_csv('features.csv', index=False)
 
     return pd.concat(all_dfs, ignore_index=True)
 

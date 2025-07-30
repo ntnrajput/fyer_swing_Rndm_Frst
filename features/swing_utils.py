@@ -73,6 +73,10 @@ def add_candle_features(df):
                              (df['upper_shadow_to_range'] > 0.6) & 
                              (df['lower_shadow_to_range'] < 0.1)).astype(np.int8)
     
+    df['range_pct'] = df['range'] / df['close']
+    df['close_below_1/2'] = df['close'] < (df['low'] + df['range'] / 2)
+    df['strong_rejection'] = ((df['range_pct'] > 0.07) & (df['close_below_1/2'])).astype(int)
+    
     # Advanced patterns
     # df = add_advanced_candle_patterns(df)
     
