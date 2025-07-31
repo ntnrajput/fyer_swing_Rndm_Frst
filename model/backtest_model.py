@@ -49,7 +49,6 @@ class SwingTradingBacktester:
         try:
             full_feature_list = self.model_pipeline['all_features']
             
-            
             missing = [f for f in full_feature_list if f not in df.columns]
             if missing:
                 logger.warning(f"Missing features: {missing}")
@@ -258,6 +257,7 @@ class SwingTradingBacktester:
             
             # Process buy signals
             if row['strong_signal'] == 1 and row['signal_confidence'] > CONFIDENCE_THRESHOLD and row['strong_rejection']!= 1 and symbol not in self.current_positions:
+            # if row['strong_signal'] == 1 and row['signal_confidence'] > CONFIDENCE_THRESHOLD and row['strong_rejection']!= 1 :
                 confidence = row['signal_confidence']
                 volatility = row.get('volatility_20', None)
                 
